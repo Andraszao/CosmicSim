@@ -1,6 +1,6 @@
 extends Node2D
 
-# Constants for maximum number of celestial bodies
+# Constants for the simulation
 const MAX_STARS = 1000
 const MAX_PLANETS = 10
 const MAX_ASTEROIDS = 50
@@ -8,7 +8,7 @@ const MAX_COMETS = 5
 const NEBULA_COUNT = 3
 const SCREEN_SIZE = Vector2(1920, 1080)
 
-# Base class for celestial bodies
+# Base class for all celestial bodies
 class CelestialBody:
 	var position: Vector2
 	var velocity: Vector2
@@ -24,7 +24,7 @@ class CelestialBody:
 	func update(delta: float):
 		position += velocity * delta
 
-# Star class, inherits from CelestialBody
+# Star class with twinkling effect
 class Star extends CelestialBody:
 	var twinkle_speed: float
 
@@ -34,10 +34,10 @@ class Star extends CelestialBody:
 
 	func update(delta: float):
 		super.update(delta)
-		# Make the star twinkle by adjusting its alpha
+		# Create twinkling effect by modulating alpha
 		color.a = 0.5 + 0.5 * sin(Time.get_ticks_msec() * twinkle_speed * 0.001)
 
-# Planet class, inherits from CelestialBody
+# Planet class with orbital motion
 class Planet extends CelestialBody:
 	var orbit_center: Vector2
 	var orbit_radius: float
@@ -54,13 +54,13 @@ class Planet extends CelestialBody:
 		angle = randf() * 2 * PI
 
 	func update(delta: float):
-		# Update planet's position in its orbit
+		# Update orbital position
 		angle += orbit_speed * delta
 		position = orbit_center + Vector2(cos(angle), sin(angle)) * orbit_radius
-		# Make the planet "breathe" by slightly changing its size
+		# Create "breathing" effect by modulating size
 		size += sin(Time.get_ticks_msec() * rotation_speed * 0.001) * 0.1
 
-# Asteroid class, inherits from CelestialBody
+# Asteroid class with rotation
 class Asteroid extends CelestialBody:
 	var rotation: float
 	var rotation_speed: float
@@ -74,7 +74,7 @@ class Asteroid extends CelestialBody:
 		super.update(delta)
 		rotation += rotation_speed * delta
 
-# Comet class, inherits from Node2D for custom drawing
+# Comet class with tail
 class Comet extends Node2D:
 	var velocity: Vector2
 	var size: float
@@ -116,11 +116,10 @@ var asteroids = []
 var comets = []
 var nebulae = []
 
-# Other scene elements
+# Scene elements
 var camera: Camera2D
 var time_scale = 1.0
 var player_focus: Vector2
-var audio_player: AudioStreamPlayer
 var shader_material: ShaderMaterial
 var day_night_cycle = 0.0
 var photo_mode = false
@@ -129,35 +128,28 @@ func _ready():
 	randomize()
 	initialize_scene()
 	setup_camera()
-	setup_audio()
 	setup_shader()
 	generate_celestial_bodies()
 	setup_ui()
 
+# Initialize the scene with a dark background
 func initialize_scene():
-	# Set the background color
 	RenderingServer.set_default_clear_color(Color(0.05, 0.05, 0.1, 1.0))
 
+# Set up the camera
 func setup_camera():
 	camera = Camera2D.new()
 	add_child(camera)
 	camera.make_current()
 	camera.position = SCREEN_SIZE / 2
 
+# Update camera position based on mouse movement
 func update_camera(delta):
-	# Make the camera follow the mouse position
 	var target_position = get_global_mouse_position()
 	camera.position = camera.position.lerp(target_position, 0.1)
 
-func setup_audio():
-	# Set up background music
-	audio_player = AudioStreamPlayer.new()
-	audio_player.stream = load("res://cosmic_ambience.ogg")
-	audio_player.play()
-	add_child(audio_player)
-
+# Set up a simple shader for visual effects
 func setup_shader():
-	# Create a simple shader for visual effects
 	var shader_code = """
 	shader_type canvas_item;
 	uniform float time_offset;
@@ -171,20 +163,15 @@ func setup_shader():
 	shader_material.shader = Shader.new()
 	shader_material.shader.code = shader_code
 
+# Generate all celestial bodies
 func generate_celestial_bodies():
 	generate_stars()
 	generate_planets()
 	generate_asteroids()
 	generate_comets()
 	generate_nebulae()
-	# Print the number of generated bodies for debugging
-	print("Stars: ", stars.size())
-	print("Planets: ", planets.size())
-	print("Asteroids: ", asteroids.size())
-	print("Comets: ", comets.size())
-	print("Nebulae: ", nebulae.size())
 
-# Functions to generate different types of celestial bodies
+# Generate stars
 func generate_stars():
 	for i in range(MAX_STARS):
 		var pos = Vector2(randf() * SCREEN_SIZE.x, randf() * SCREEN_SIZE.y)
@@ -193,6 +180,7 @@ func generate_stars():
 		var twinkle = randf() * 5 + 1
 		stars.append(Star.new(pos, size, color, twinkle))
 
+# Generate planets
 func generate_planets():
 	for i in range(MAX_PLANETS):
 		var center = Vector2(randf() * SCREEN_SIZE.x, randf() * SCREEN_SIZE.y)
@@ -203,6 +191,7 @@ func generate_planets():
 		var rot_speed = randf() * 2 + 0.5
 		planets.append(Planet.new(center, radius, speed, size, color, rot_speed))
 
+# Generate asteroids
 func generate_asteroids():
 	for i in range(MAX_ASTEROIDS):
 		var pos = Vector2(randf() * SCREEN_SIZE.x, randf() * SCREEN_SIZE.y)
@@ -212,6 +201,7 @@ func generate_asteroids():
 		var rot_speed = randf() * 4 - 2
 		asteroids.append(Asteroid.new(pos, vel, size, color, rot_speed))
 
+# Generate comets
 func generate_comets():
 	for i in range(MAX_COMETS):
 		var pos = Vector2(randf() * SCREEN_SIZE.x, randf() * SCREEN_SIZE.y)
@@ -223,6 +213,7 @@ func generate_comets():
 		add_child(comet)
 		comets.append(comet)
 
+# Generate nebulae
 func generate_nebulae():
 	for i in range(NEBULA_COUNT):
 		var pos = Vector2(randf() * SCREEN_SIZE.x, randf() * SCREEN_SIZE.y)
@@ -230,15 +221,15 @@ func generate_nebulae():
 		var color = Color(randf(), randf(), randf(), 0.3)
 		nebulae.append({"position": pos, "size": size, "color": color})
 
+# Main process function
 func _process(delta):
 	update_celestial_bodies(delta * time_scale)
 	update_camera(delta)
-	update_audio()
 	update_day_night_cycle(delta)
 	queue_redraw()
 
+# Update all celestial bodies
 func update_celestial_bodies(delta):
-	# Update positions and states of all celestial bodies
 	for star in stars:
 		star.update(delta)
 	for planet in planets:
@@ -248,24 +239,21 @@ func update_celestial_bodies(delta):
 	for comet in comets:
 		comet.update(delta)
 
-func update_audio():
-	# Adjust audio pitch based on time scale
-	audio_player.pitch_scale = time_scale
-
+# Update day-night cycle
 func update_day_night_cycle(delta):
-	# Simulate day-night cycle by changing background color
 	day_night_cycle += delta * 0.1
 	if day_night_cycle > 1:
 		day_night_cycle = 0
 	var background_color = Color(0.05 + 0.05 * sin(day_night_cycle * PI), 0.05, 0.1)
 	RenderingServer.set_default_clear_color(background_color)
 
+# Set up UI elements (placeholder)
 func setup_ui():
 	# Add UI elements like buttons, sliders, etc. here.
 	pass
 
+# Draw all celestial bodies
 func _draw():
-	# Draw all celestial bodies
 	for star in stars:
 		draw_circle(star.position, star.size, star.color)
 	for planet in planets:
